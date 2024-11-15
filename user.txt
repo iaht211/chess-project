@@ -1,0 +1,6 @@
+
+dung 1
+thai 2
+dung1 1
+1 1
+2 2
