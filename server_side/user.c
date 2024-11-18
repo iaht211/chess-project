@@ -63,7 +63,7 @@ int registerAccount(char *username, char *password)
         return 0;
     }
 
-    fprintf(file, "\n%s %s", username, password);
+    fprintf(file, "\n%s %s %d %d", username, password, 0, 1500);
 
     fclose(file);
     printf("Register Successfully!\n");
@@ -154,7 +154,7 @@ void logOnGame(char *username, char *buffer, char *filename)
 int changePassword(char *username, char *oldPassword, char *newPassword)
 {
     FILE *file = fopen("user.txt", "r");
-    char line[100];
+    char line[200]; // Đủ lớn để chứa cả username, password, elo và matches
     int userFound = 0;
 
     if (file == NULL)
@@ -163,6 +163,7 @@ int changePassword(char *username, char *oldPassword, char *newPassword)
         return 0;
     }
 
+    // Mở tệp tạm để ghi lại các thông tin đã thay đổi
     FILE *tempFile = fopen("temp_user.txt", "w");
 
     if (tempFile == NULL)
@@ -175,7 +176,9 @@ int changePassword(char *username, char *oldPassword, char *newPassword)
     while (fgets(line, sizeof(line), file) != NULL)
     {
         char *storedUsername = strtok(line, " ");
-        char *storedPassword = strtok(NULL, " \n");
+        char *storedPassword = strtok(NULL, " ");
+        char *storedElo = strtok(NULL, " ");
+        char *storedMatches = strtok(NULL, " \n");
 
         if (storedUsername != NULL && storedPassword != NULL)
         {
@@ -208,7 +211,7 @@ int changePassword(char *username, char *oldPassword, char *newPassword)
     fclose(file);
     fclose(tempFile);
 
-    // Xóa tệp cũ và đổi tên tệp tạm thời thành tên tệp gốc
+    // Xóa tệp cũ và đổi tên tệp tạm thành tệp gốc
     remove("user.txt");
     rename("temp_user.txt", "user.txt");
 
