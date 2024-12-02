@@ -28,6 +28,17 @@
 #define black_pawn   0x265F // ♟
 
 bool is_diagonal(int, int);
+// Function declarations
+bool general_errors(wchar_t **board, int player, int team, int *move, int piece_team);
+bool validate_piece_move(wchar_t **board, int player, int piece_team, int x_moves, int y_moves, int *move);
+bool validate_king_move(int player, int x_moves, int y_moves);
+bool validate_queen_move(wchar_t **board, int player, int x_moves, int y_moves, int *move);
+bool validate_rook_move(wchar_t **board, int player, int x_moves, int y_moves, int *move);
+bool validate_bishop_move(wchar_t **board, int player, int x_moves, int y_moves, int *move);
+bool validate_knight_move(int player, int x_moves, int y_moves);
+bool validate_pawn_move(wchar_t **board, int player, int piece_team, int x_moves, int y_moves, int *move);
+bool validate_pawn_capture(wchar_t **board, int player, int piece_team, int *move);
+bool validate_pawn_advance(wchar_t **board, int player, int piece_team, int x_moves, int *move);
 
 void move_piece(wchar_t **board, int *move) {
     // Move piece in board from origin to dest
@@ -216,6 +227,7 @@ int get_piece_type(wchar_t piece) {
     }
     return -1;
 }
+
 bool eat_piece(wchar_t **board, int x, int y) {
     return (get_piece_team(board, x, y) != 0);
 }
@@ -299,188 +311,173 @@ bool is_diagonal(int x_moves, int y_moves) {
 }
 
 bool is_move_valid(wchar_t **board, int player, int team, int *move) {
-    int *piece_team = (int *)malloc(sizeof(int *));
-    int *x_moves = (int *)malloc(sizeof(int *));
-    int *y_moves = (int *)malloc(sizeof(int *));
+    int piece_team = get_piece_team(board, move[0], move[1]);
+    int x_moves = getManitud(move[0], move[2]);
+    int y_moves = getManitud(move[1], move[3]);
 
-    *piece_team = get_piece_team(board, *(move), move[1]);
-    *x_moves = getManitud(*move, move[2]);
-    *y_moves = getManitud(move[1], move[3]);
+    if (!general_errors(board, player, team, move, piece_team)) {
+        return false;
+    }
 
-    // General errors
-    if (board[*(move)][move[1]] == 0) {
+    return validate_piece_move(board, player, piece_team, x_moves, y_moves, move);
+}
+
+// Function to handle general errors
+bool general_errors(wchar_t **board, int player, int team, int *move, int piece_team) {
+    if (board[move[0]][move[1]] == 0) {
         send(player, "e-08", 4, 0);
-        return false;
-    }  // If selected piece == 0 there's nothing selected
-    if (*piece_team == get_piece_team(board, move[2], move[3])) {
+        return false; // If selected piece == 0 there's nothing selected
+    }
+    if (piece_team == get_piece_team(board, move[2], move[3])) {
         send(player, "e-09", 4, 0);
-        return false;
-    }  // If the origin piece's team == dest piece's team is an invalid move
-    // Check if user is moving his piece
-    if (team != *piece_team) {
+        return false; // Origin piece's team == destination piece's team, invalid move
+    }
+    // Check if user is moving their own piece
+    if (team != piece_team) {
         send(player, "e-07", 4, 0);
         return false;
     }
+    return true;
+}
 
-    printf("Player %d(%d) [%d,%d] to [%d,%d]\n", player, *piece_team, move[0], move[1], move[2], move[3]);
-
-    // XMOVES = getManitud(*move, move[2])
-    // YMOVES = getManitud(move[1], move[3])
-    printf("Moved piece -> %d \n", get_piece_type(board[*(move)][move[1]]));
-    switch (get_piece_type(board[*(move)][move[1]])) {
-        case 0: /* --- ♚ --- */
-            if (*x_moves > 1 || *y_moves > 1) {
-                send(player, "e-10", 5, 0);
-                freeAll(piece_team, x_moves, y_moves);
-                return false;
-            }
-            break;
-        case 1:
-            if (!is_rect(move) && !is_diagonal(*x_moves, *y_moves)) {
-                send(player, "e-queen", 4, 0);
-                freeAll(piece_team, x_moves, y_moves);
-                return false;
-            }
-            if (!is_rect_clear(board, move, *x_moves, *y_moves)) {
-                send(player, "e-31", 4, 0);
-                freeAll(piece_team, x_moves, y_moves);
-                return false;
-            }
-            if (!is_diagonal_clear(board, move)) {
-                send(player, "e-41", 4, 0);
-                freeAll(piece_team, x_moves, y_moves);
-                return false;
-            }
-            if (eat_piece(board, move[2], move[3])) {
-                send(player, "i-99", 4, 0);
-                freeAll(piece_team, x_moves, y_moves);
-                return true;
-            }
-            break;
-        case 2: /* --- ♜ --- */
-            if (!is_rect(move)) {
-                send(player, "e-30", 5, 0);
-                freeAll(piece_team, x_moves, y_moves);
-                return false;
-            }
-            if (!is_rect_clear(board, move, *x_moves, *y_moves)) {
-                send(player, "e-31", 4, 0);
-                freeAll(piece_team, x_moves, y_moves);
-                return false;
-            }
-            if (eat_piece(board, move[2], move[3])) {
-                send(player, "i-99", 4, 0);
-                freeAll(piece_team, x_moves, y_moves);
-                return true;
-            }
-            break;
-        case 3: /* ––– ♝ ––– */
-            if (!is_diagonal(*x_moves, *y_moves)) {
-                send(player, "e-40", 4, 0);
-                freeAll(piece_team, x_moves, y_moves);
-                return false;  // Check if it's a valid diagonal move
-            }
-            if (!is_diagonal_clear(board, move)) {
-                send(player, "e-41", 4, 0);
-                freeAll(piece_team, x_moves, y_moves);
-                return false;
-            }
-            if (eat_piece(board, move[2], move[3])) {
-                send(player, "i-99", 4, 0);
-                freeAll(piece_team, x_moves, y_moves);
-                return true;
-            }
-            break;
-        case 4: /* --- ♞ --- */
-            if ((abs(*x_moves) != 1 || abs(*y_moves) != 2) && (abs(*x_moves) != 2 || abs(*y_moves) != 1)) {
-                send(player, "e-50", 4, 0);
-                freeAll(piece_team, x_moves, y_moves);
-                return false;
-            }
-            if (eat_piece(board, move[2], move[3])) {
-                send(player, "i-99", 4, 0);
-                freeAll(piece_team, x_moves, y_moves);
-                return true;
-            }
-            break;
-        case 5: /* --- ♟ --- */
-            // Moving in Y axis
-            if (*y_moves == 1) {
-                if (*piece_team == 1 && (*move - move[2]) == 1) {
-                    if (eat_piece(board, move[2], move[3])) {
-                        send(player, "i-99", 4, 0);
-                        if (move[2] == 0) {
-                            promote_piece(board, *move, move[1], *piece_team);
-                            send(player, "i-98", 4, 0);
-                        }
-                    }
-                    freeAll(piece_team, x_moves, y_moves);
-                    return true;
-                } else if (*piece_team == -1 && (*move - move[2]) == -1) {
-                    if (eat_piece(board, move[2], move[3])) {
-                        send(player, "i-99", 4, 0);
-                        if (move[2] == 7) {
-                            promote_piece(board, *move, move[1], *piece_team);
-                            send(player, "i-98", 4, 0);
-                        }
-                    }
-                    freeAll(piece_team, x_moves, y_moves);
-                    return true;
-                }
-                freeAll(piece_team, x_moves, y_moves);
-                return false;
-            } else if (*y_moves == 0) {
-                // Check if it's the first move
-                if (*x_moves >= 2) {
-                    if (!is_rect_clear(board, move, *x_moves, *y_moves)) {
-                        send(player, "e-31", 4, 0);
-                        freeAll(piece_team, x_moves, y_moves);
-                        return false;
-                    }else if (move[0] == 6 && *piece_team == 1 && (*move - move[2]) == 2 && get_piece_type(board[move[2]][move[3]])==-1) {
-                        printf("First move 1\n");
-                        freeAll(piece_team, x_moves, y_moves);
-                        return true;
-                    } else if (move[0] == 1 && *piece_team == -1 && (*move - move[2]) == -2 && get_piece_type(board[move[2]][move[3]])==-1) {
-                        printf("First move 2\n");
-                        freeAll(piece_team, x_moves, y_moves);
-                        return true;
-                    } else {
-                        send(player, "e-62", 5, 0);
-                        freeAll(piece_team, x_moves, y_moves);
-                        return false;
-                    } 
-                    
-                } else if (*x_moves == 1) {
-                    if ((*piece_team == 1 && (*move - move[2]) == 1 && get_piece_type(board[move[2]][move[3]])==-1)) {
-                        if (move[2] == 0) {
-                            promote_piece(board, *move, move[1], *piece_team);
-                            send(player, "i-98", 4, 0);
-                        }
-                        freeAll(piece_team, x_moves, y_moves);
-                        return true;
-                    } else if ((*piece_team == -1 && (*move - move[2]) == -1 && get_piece_type(board[move[2]][move[3]])==-1)) {
-                        if (move[2] == 7) {
-                            promote_piece(board, *move, move[1], *piece_team);
-                            send(player, "i-98", 4, 0);
-                        }
-                        freeAll(piece_team, x_moves, y_moves);
-                        return true;
-                    } else {
-                        freeAll(piece_team, x_moves, y_moves);
-                        return false;
-                    }
-                } else {
-                    freeAll(piece_team, x_moves, y_moves);
-                    return false;
-                }
-            }
-            break;
+// Function to validate piece movement based on type
+bool validate_piece_move(wchar_t **board, int player, int piece_team, int x_moves, int y_moves, int *move) {
+    int piece_type = get_piece_type(board[move[0]][move[1]]);
+    
+    switch (piece_type) {
+        case 0: // --- ♚ --- (King)
+            return validate_king_move(player, x_moves, y_moves);
+        case 1: // --- ♛ --- (Queen)
+            return validate_queen_move(board, player, x_moves, y_moves, move);
+        case 2: // --- ♜ --- (Rook)
+            return validate_rook_move(board, player, x_moves, y_moves, move);
+        case 3: // --- ♝ --- (Bishop)
+            return validate_bishop_move(board, player, x_moves, y_moves, move);
+        case 4: // --- ♞ --- (Knight)
+            return validate_knight_move(player, x_moves, y_moves);
+        case 5: // --- ♟ --- (Pawn)
+            return validate_pawn_move(board, player, piece_team, x_moves, y_moves, move);
         default:
             break;
     }
-
-    freeAll(piece_team, x_moves, y_moves);
     return true;
+}
+
+// Function to validate king movement
+bool validate_king_move(int player, int x_moves, int y_moves) {
+    if (x_moves > 1 || y_moves > 1) {
+        send(player, "e-10", 5, 0);
+        return false;
+    }
+    return true;
+}
+
+// Function to validate queen movement
+bool validate_queen_move(wchar_t **board, int player, int x_moves, int y_moves, int *move) {
+    if (!is_rect(move) && !is_diagonal(x_moves, y_moves)) {
+        send(player, "e-queen", 4, 0);
+        return false;
+    }
+    if (!is_rect_clear(board, move, x_moves, y_moves) || !is_diagonal_clear(board, move)) {
+        send(player, "e-31", 4, 0);
+        return false;
+    }
+    if (eat_piece(board, move[2], move[3])) {
+        send(player, "i-99", 4, 0);
+        return true;
+    }
+    return true;
+}
+
+// Function to validate rook movement
+bool validate_rook_move(wchar_t **board, int player, int x_moves, int y_moves, int *move) {
+    if (!is_rect(move)) {
+        send(player, "e-30", 5, 0);
+        return false;
+    }
+    if (!is_rect_clear(board, move, x_moves, y_moves)) {
+        send(player, "e-31", 4, 0);
+        return false;
+    }
+    if (eat_piece(board, move[2], move[3])) {
+        send(player, "i-99", 4, 0);
+        return true;
+    }
+    return true;
+}
+
+// Function to validate bishop movement
+bool validate_bishop_move(wchar_t **board, int player, int x_moves, int y_moves, int *move) {
+    if (!is_diagonal(x_moves, y_moves) || !is_diagonal_clear(board, move)) {
+        send(player, "e-40", 4, 0);
+        return false; // Invalid diagonal move
+    }
+    if (eat_piece(board, move[2], move[3])) {
+        send(player, "i-99", 4, 0);
+        return true;
+    }
+    return true;
+}
+
+// Function to validate knight movement
+bool validate_knight_move(int player, int x_moves, int y_moves) {
+    if ((abs(x_moves) != 1 || abs(y_moves) != 2) && (abs(x_moves) != 2 || abs(y_moves) != 1)) {
+        send(player, "e-50", 4, 0);
+        return false;
+    }
+    return true;
+}
+
+// Function to validate pawn movement
+bool validate_pawn_move(wchar_t **board, int player, int piece_team, int x_moves, int y_moves, int *move) {
+    if (y_moves == 1) {
+        return validate_pawn_capture(board, player, piece_team, move);
+    } else if (y_moves == 0) {
+        return validate_pawn_advance(board, player, piece_team, x_moves, move);
+    }
+    return false;
+}
+
+// Function to validate pawn capturing
+bool validate_pawn_capture(wchar_t **board, int player, int piece_team, int *move) {
+    if ((piece_team == 1 && (move[0] - move[2]) == 1) || (piece_team == -1 && (move[0] - move[2]) == -1)) {
+        if (eat_piece(board, move[2], move[3])) {
+            send(player, "i-99", 4, 0);
+            if ((piece_team == 1 && move[2] == 0) || (piece_team == -1 && move[2] == 7)) {
+                promote_piece(board, move[0], move[1], piece_team);
+                send(player, "i-98", 4, 0);
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
+// Function to validate pawn advancing
+bool validate_pawn_advance(wchar_t **board, int player, int piece_team, int x_moves, int *move) {
+    if (x_moves >= 2) {
+        if (!is_rect_clear(board, move, x_moves, 0)) {
+            send(player, "e-31", 4, 0);
+            return false;
+        } else if ((move[0] == 6 && piece_team == 1 && (move[0] - move[2]) == 2 && get_piece_type(board[move[2]][move[3]]) == -1) ||
+                   (move[0] == 1 && piece_team == -1 && (move[0] - move[2]) == -2 && get_piece_type(board[move[2]][move[3]]) == -1)) {
+            printf("First move\n");
+            return true;
+        } else {
+            send(player, "e-62", 5, 0);
+            return false;
+        }
+    } else if (x_moves == 1) {
+        if ((piece_team == 1 && (move[0] - move[2]) == 1 && get_piece_type(board[move[2]][move[3]]) == -1) ||
+            (piece_team == -1 && (move[0] - move[2]) == -1 && get_piece_type(board[move[2]][move[3]]) == -1)) {
+            if ((piece_team == 1 && move[2] == 0) || (piece_team == -1 && move[2] == 7)) {
+                promote_piece(board, move[0], move[1], piece_team);
+                send(player, "i-98", 4, 0);
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
 bool check_end_game(wchar_t **board) {

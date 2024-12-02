@@ -7,5 +7,4 @@ struct Room rooms[100];
 int numbers = 0;
 int roomNumbers = 0;
 
-// Waiting player conditional variable
-pthread_mutex_t general_mutex;
+pthread_mutex_t general_mutex = PTHREAD_MUTEX_INITIALIZER;
