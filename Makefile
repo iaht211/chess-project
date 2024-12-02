@@ -2,7 +2,7 @@
 CC := gcc
 
 # Compiler Flags
-CFLAGS := -w -Wextra -pthread
+CFLAGS := -w -Wextra -pthread -lm  # Thêm -lm vào CFLAGS
 
 # Directories
 CLIENT_DIR := client_side
