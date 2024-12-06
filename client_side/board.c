@@ -1,6 +1,10 @@
+#include <ncurses.h>
 #include <wchar.h>
 #include <locale.h>
 #include <stdlib.h>
+#include <stdio.h>
+
+#include "board.h"
 
 #define white_king   0x2654 // ♔
 #define white_queen  0x2655 // ♕
@@ -14,6 +18,7 @@
 #define black_bishop 0x265D // ♝
 #define black_knight 0x265E // ♞
 #define black_pawn   0x265F // ♟
+#define BOARD_SIZE 8
 
 static void debug_print_board(wchar_t **);
 
@@ -62,7 +67,6 @@ static char * create_od_board() {
 }
 
 static void to_one_dimension_char(wchar_t ** board, char * od_board) {
-
   for (int i = 0; i < 8; i++) {
     for (int j = 0; j < 8; j++) {
       if (board[i][j] == white_rook) od_board[8*i+j] = '1';
@@ -122,35 +126,25 @@ static wchar_t translate_piece (char char_piece) {
   else return ' ';
 }
 
+char get_char_piece(char piece) {
+    switch (piece) {
+        case '1': return 'R'; // Rook
+        case '2': return 'N'; // Knight
+        case '3': return 'B'; // Bishop
+        case '4': return 'Q'; // Queen
+        case '5': return 'K'; // King
+        case '6': return 'P'; // Pawn for one side
+        case '7': return 'r'; // Rook for the other side
+        case '8': return 'n'; // Knight for the other side
+        case '9': return 'b'; // Bishop for the other side
+        case 'a': return 'q'; // Queen for the other side
+        case 'b': return 'k'; // King for the other side
+        case 'c': return 'p'; // Pawn for the other side
+        default: return ' ';  // Empty square
+    }
+}
 
-
-// static void print_board_buff(char * board) {
-//   setlocale( LC_ALL, "en_US.UTF-8" );
-//   printf("\n             ┌───────────────────┐          \n");
-//   printf("             │       C*CHESS     │          \n");
-//   printf("             └───────────────────┘          \n\n");
-//   printf("         a   b   c   d   e   f   g   h     \n");
-//   printf("       ┌───┬───┬───┬───┬───┬───┬───┬───┐   \n");
-//   printf("     8 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 8 \n", translate_piece(board[0]), translate_piece(board[1]), translate_piece(board[2]), translate_piece(board[3]), translate_piece(board[4]), translate_piece(board[5]), translate_piece(board[6]), translate_piece(board[7]));
-//   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-//   printf("     7 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 7 \n", translate_piece(board[8]), translate_piece(board[9]), translate_piece(board[10]), translate_piece(board[11]), translate_piece(board[12]), translate_piece(board[13]), translate_piece(board[14]), translate_piece(board[15]));
-//   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-//   printf("     6 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 6 \n", translate_piece(board[16]), translate_piece(board[17]), translate_piece(board[18]), translate_piece(board[19]), translate_piece(board[20]), translate_piece(board[21]), translate_piece(board[22]), translate_piece(board[23]));
-//   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-//   printf("     5 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 5 \n", translate_piece(board[24]), translate_piece(board[25]), translate_piece(board[26]), translate_piece(board[27]), translate_piece(board[28]), translate_piece(board[29]), translate_piece(board[30]), translate_piece(board[31]));
-//   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-//   printf("     4 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 4 \n", translate_piece(board[32]), translate_piece(board[33]), translate_piece(board[34]), translate_piece(board[35]), translate_piece(board[36]), translate_piece(board[37]), translate_piece(board[38]), translate_piece(board[39]));
-//   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-//   printf("     3 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 3 \n", translate_piece(board[40]), translate_piece(board[41]), translate_piece(board[42]), translate_piece(board[43]), translate_piece(board[44]), translate_piece(board[45]), translate_piece(board[46]), translate_piece(board[47]));
-//   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-//   printf("     2 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 2 \n", translate_piece(board[48]), translate_piece(board[49]), translate_piece(board[50]), translate_piece(board[51]), translate_piece(board[52]), translate_piece(board[53]), translate_piece(board[54]), translate_piece(board[55]));
-//   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-//   printf("     1 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 1 \n", translate_piece(board[56]), translate_piece(board[57]), translate_piece(board[58]), translate_piece(board[59]), translate_piece(board[60]), translate_piece(board[61]), translate_piece(board[62]), translate_piece(board[63]));
-//   printf("       └───┴───┴───┴───┴───┴───┴───┴───┘   \n");
-//   printf("         a   b   c   d   e   f   g   h     \n\n");
-// }
-
-static void print_board_buff(char *board){
+void print_board_buff(char *board){
     for(int i = 0; i < 8; i++){
         for(int j = 0; j < 8; j++){
             printf("%c ", board[i*8 + j]);
@@ -160,40 +154,217 @@ static void print_board_buff(char *board){
     // printf("Print normal board\n");
 }
 
+// void print_board_buff(char *board){
+//     initscr();
+//     noecho();
+//     curs_set(FALSE);
+//     start_color();
+//     init_pair(1, COLOR_WHITE, COLOR_BLACK); // Black squares
+//     init_pair(2, COLOR_BLACK, COLOR_WHITE); // White squares
+//     init_pair(5, COLOR_BLUE, COLOR_BLACK);  // White pieces on black squares
+//     init_pair(6, COLOR_RED, COLOR_BLACK);   // Black pieces on black squares
+//     init_pair(7, COLOR_BLUE, COLOR_WHITE);  // White pieces on white squares
+//     init_pair(8, COLOR_RED, COLOR_WHITE);   // Black pieces on white squares
 
-static void print_board_buff_inverted(char *board){
-    for(int i = 7; i >= 0; i--){
-        for(int j = 0; j < 8; j++){
-            printf("%c ", board[i*8 + j]);
-        }
-        printf("\n");
-    }
-    // printf("Print inverted board\n");  
-}
+//     int start_x = 4, start_y = 2;
+//     int tile_width = 3, tile_height = 1;
 
+//     for (int j = 0; j < BOARD_SIZE; j++) {
+//         mvprintw(start_y - 1, start_x + j * tile_width + tile_width / 2, "%c", 'A' + j);
+//     }
 
-// static void print_board_buff_inverted(char * board) {
-//   setlocale( LC_ALL, "en_US.UTF-8" );
-//   printf("\n             ┌───────────────────┐          \n");
-//   printf("             │       C*CHESS     │          \n");
-//   printf("             └───────────────────┘          \n\n");
-//   printf("         h   g   f   e   d   c   b   a     \n");
-//   printf("       ┌───┬───┬───┬───┬───┬───┬───┬───┐   \n");
-//   printf("     1 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 1 \n", translate_piece(board[63]), translate_piece(board[62]), translate_piece(board[61]), translate_piece(board[60]), translate_piece(board[59]), translate_piece(board[58]), translate_piece(board[57]), translate_piece(board[56]));
-//   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-//   printf("     2 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 2 \n", translate_piece(board[55]), translate_piece(board[54]), translate_piece(board[53]), translate_piece(board[52]), translate_piece(board[51]), translate_piece(board[50]), translate_piece(board[49]), translate_piece(board[48]));
-//   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-//   printf("     3 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 3 \n", translate_piece(board[47]), translate_piece(board[46]), translate_piece(board[45]), translate_piece(board[44]), translate_piece(board[43]), translate_piece(board[42]), translate_piece(board[41]), translate_piece(board[40]));
-//   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-//   printf("     4 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 4 \n", translate_piece(board[39]), translate_piece(board[38]), translate_piece(board[37]), translate_piece(board[36]), translate_piece(board[35]), translate_piece(board[34]), translate_piece(board[33]), translate_piece(board[32]));
-//   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-//   printf("     5 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 5 \n", translate_piece(board[31]), translate_piece(board[30]), translate_piece(board[29]), translate_piece(board[28]), translate_piece(board[27]), translate_piece(board[26]), translate_piece(board[25]), translate_piece(board[24]));
-//   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-//   printf("     6 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 6 \n", translate_piece(board[23]), translate_piece(board[22]), translate_piece(board[21]), translate_piece(board[20]), translate_piece(board[19]), translate_piece(board[18]), translate_piece(board[17]), translate_piece(board[16]));
-//   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-//   printf("     7 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 7 \n", translate_piece(board[15]), translate_piece(board[14]), translate_piece(board[13]), translate_piece(board[12]), translate_piece(board[11]), translate_piece(board[10]), translate_piece(board[9]), translate_piece(board[8]));
-//   printf("       ├───┼───┼───┼───┼───┼───┼───┼───┤   \n");
-//   printf("     8 │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ %lc │ 8 \n", translate_piece(board[7]), translate_piece(board[6]), translate_piece(board[5]), translate_piece(board[4]), translate_piece(board[3]), translate_piece(board[2]), translate_piece(board[1]), translate_piece(board[0]));
-//   printf("       └───┴───┴───┴───┴───┴───┴───┴───┘   \n");
-//   printf("         h   g   f   e   d   c   b   a     \n\n");
+//     for (int i = 0; i < BOARD_SIZE; i++) {
+//         mvprintw(start_y + i * tile_height + tile_height / 2, start_x - 2, "%d", BOARD_SIZE - i);
+//     }
+
+//     for (int i = 0; i < BOARD_SIZE; i++){
+//         for (int j = 0; j < BOARD_SIZE; j++){
+//             int x = start_x + j * tile_width;
+//             int y = start_y + i * tile_height;
+
+//             if ((i + j) % 2 == 0){
+//                 attron(COLOR_PAIR(1));
+//             } else {
+//                 attron(COLOR_PAIR(2));
+//             }
+
+//             for(int dy = 0; dy < tile_height; dy++){
+//                 for(int dx = 0; dx < tile_width; dx++){
+//                     mvprintw(y + dy, x + dx, " ");
+//                 }
+//             }
+
+//             if ((i + j) % 2 == 0){
+//                 attroff(COLOR_PAIR(1));
+//             } else {
+//                 attroff(COLOR_PAIR(2));
+//             }
+//         }
+//     }
+
+//     // Print the pieces
+//     for(int i = 0; i < BOARD_SIZE; i++){
+//         for(int j = 0; j < BOARD_SIZE; j++){
+//             char piece = board[i * BOARD_SIZE + j];
+//             if (piece == ' '){
+//                 continue;
+//             }
+//             int x = start_x + j * tile_width + tile_width / 2;
+//             int y = start_y + i * tile_height + tile_height / 2;
+
+//             int WHITE_PIECE = 1;
+//             if (piece >= '1' && piece <= '6')
+//                 WHITE_PIECE = 0;
+
+//             if ((i+j) % 2 == 0){
+//                 if(WHITE_PIECE){
+//                     attron(COLOR_PAIR(5));
+//                 } else {
+//                     attron(COLOR_PAIR(6));
+//                 }
+//             } else {
+//                 if(WHITE_PIECE){
+//                     attron(COLOR_PAIR(7));
+//                 } else {
+//                     attron(COLOR_PAIR(8));
+//                 }
+//             }
+
+//             mvprintw(y, x, "%c", get_char_piece(piece));
+//             if ((i+j) % 2 == 0){
+//                 if(WHITE_PIECE){
+//                     attroff(COLOR_PAIR(5));
+//                 } else {
+//                     attroff(COLOR_PAIR(6));
+//                 }
+//             } else {
+//                 if(WHITE_PIECE){
+//                     attroff(COLOR_PAIR(7));
+//                 } else {
+//                     attroff(COLOR_PAIR(8));
+//                 }
+//             }
+//         }
+//     }
+
+//     // Refresh the screen and wait for user input to exit
+//     refresh();
+//     getch();
+
+//     // End ncurses mode
+//     endwin();
 // }
+
+
+
+// static void print_board_buff_inverted(char *board){
+//     for(int i = 7; i >= 0; i--){
+//         for(int j = 0; j < 8; j++){
+//             printf("%c ", board[i*8 + j]);
+//         }
+//         printf("\n");
+//     }
+//     // printf("Print inverted board\n");  
+// }
+
+
+void print_board_buff_inverted(char *board) {
+    initscr();
+    noecho();
+    curs_set(FALSE);
+    start_color();
+    init_pair(1, COLOR_WHITE, COLOR_BLACK); // Black squares
+    init_pair(2, COLOR_BLACK, COLOR_WHITE); // White squares
+    init_pair(5, COLOR_BLUE, COLOR_BLACK);  // White pieces on black squares
+    init_pair(6, COLOR_RED, COLOR_BLACK);   // Black pieces on black squares
+    init_pair(7, COLOR_BLUE, COLOR_WHITE);  // White pieces on white squares
+    init_pair(8, COLOR_RED, COLOR_WHITE);   // Black pieces on white squares
+
+    int start_x = 4, start_y = 2;
+    int tile_width = 3, tile_height = 1;
+
+    for (int j = 0; j < BOARD_SIZE; j++) {
+        mvprintw(start_y - 1, start_x + j * tile_width + tile_width / 2, "%c", 'A' + j);
+    }
+
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        mvprintw(start_y + i * tile_height + tile_height / 2, start_x - 2, "%d", BOARD_SIZE - i);
+    }
+
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        for (int j = 0; j < BOARD_SIZE; j++) {
+            int x = start_x + j * tile_width;
+            int y = start_y + i * tile_height;
+
+            if ((i + j) % 2 == 0) {
+                attron(COLOR_PAIR(1));
+            } else {
+                attron(COLOR_PAIR(2));
+            }
+
+            for (int dy = 0; dy < tile_height; dy++) {
+                for (int dx = 0; dx < tile_width; dx++) {
+                    mvprintw(y + dy, x + dx, " ");
+                }
+            }
+
+            if ((i + j) % 2 == 0) {
+                attroff(COLOR_PAIR(1));
+            } else {
+                attroff(COLOR_PAIR(2));
+            }
+        }
+    }
+
+    // Print the pieces inverted
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        for (int j = 0; j < BOARD_SIZE; j++) {
+            char piece = board[(BOARD_SIZE - 1 - i) * BOARD_SIZE + (BOARD_SIZE - 1 - j)];
+            if (piece == ' ') {
+                continue;
+            }
+            int x = start_x + j * tile_width + tile_width / 2;
+            int y = start_y + i * tile_height + tile_height / 2;
+
+            int WHITE_PIECE = 1;
+            if (piece >= '1' && piece <= '6')
+                WHITE_PIECE = 0;
+
+            if ((i + j) % 2 == 0) {
+                if (WHITE_PIECE) {
+                    attron(COLOR_PAIR(5));
+                } else {
+                    attron(COLOR_PAIR(6));
+                }
+            } else {
+                if (WHITE_PIECE) {
+                    attron(COLOR_PAIR(7));
+                } else {
+                    attron(COLOR_PAIR(8));
+                }
+            }
+
+            mvprintw(y, x, "%c", get_char_piece(piece));
+            if ((i + j) % 2 == 0) {
+                if (WHITE_PIECE) {
+                    attroff(COLOR_PAIR(5));
+                } else {
+                    attroff(COLOR_PAIR(6));
+                }
+            } else {
+                if (WHITE_PIECE) {
+                    attroff(COLOR_PAIR(7));
+                } else {
+                    attroff(COLOR_PAIR(8));
+                }
+            }
+        }
+    }
+
+    // Refresh the screen and wait for user input to exit
+    refresh();
+    getch();
+
+    // End ncurses mode
+    endwin();
+}

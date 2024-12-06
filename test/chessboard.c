@@ -91,7 +91,7 @@ void draw_board(char *board) {
     }
 
     // Draw the chess pieces
-    for (int row = 0; row < BOARD_SIZE; row++) {
+    /*for (int row = 0; row < BOARD_SIZE; row++) {
         for (int col = 0; col < BOARD_SIZE; col++) {
             char piece = board[row * BOARD_SIZE + col];
             wchar_t translated_piece = translate_piece(piece);
@@ -121,7 +121,7 @@ void draw_board(char *board) {
             }
         }
     }
-
+    */
     refresh(); // Refresh the screen to display changes
     getch();   // Wait for user input before exiting
     endwin();  // End ncurses mode
