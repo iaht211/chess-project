@@ -2,10 +2,11 @@
 CC := gcc
 
 # Compiler Flags
-CFLAGS := -w -Wextra -pthread  # Không cần thêm -lm ở đây
 
-# Linker Flags (Đảm bảo -lm nằm ở đây)
-LDFLAGS := -lm
+CFLAGS := -w -Wextra -pthread
+
+# Linker Flags
+LDFLAGS := -lncurses
 
 # Directories
 CLIENT_DIR := client_side
@@ -28,7 +29,7 @@ all: $(CLIENT_EXEC) $(SERVER_EXEC)
 
 # Build Client Executable
 $(CLIENT_EXEC): $(CLIENT_OBJS)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CLIENT_OBJS) $(LDFLAGS) -o $@
 
 # Build Server Executable
 $(SERVER_EXEC): $(SERVER_OBJS)
