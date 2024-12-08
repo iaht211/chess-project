@@ -2,6 +2,7 @@
 CC := gcc
 
 # Compiler Flags
+
 CFLAGS := -w -Wextra -pthread
 
 # Linker Flags
@@ -32,7 +33,7 @@ $(CLIENT_EXEC): $(CLIENT_OBJS)
 
 # Build Server Executable
 $(SERVER_EXEC): $(SERVER_OBJS)
-	$(CC) $(SERVER_OBJS) $(LDFLAGS) -o $@
+	$(CC) $(CFLAGS) $(SERVER_OBJS) $(LDFLAGS) -o $@
 
 # Compile Source Files into Object Files
 %.o: %.c
