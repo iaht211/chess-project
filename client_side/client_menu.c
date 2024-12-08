@@ -87,7 +87,7 @@ void handle_login(int socket)
             mvprintw(4, 2, "Login successful. Press any key to continue to the main menu...");
             getch();
             clear();
-            display_main_menu(socket);
+            display_main_menu(&socket);
 
             loggedIn = 1;
         }
@@ -170,28 +170,57 @@ void handle_register(int socket)
 void handle_exit(int socket)
 {
     int n;
+    char c;
 
+    // Clear screen and show confirmation prompt
+    clear();
+    mvprintw(2, 2, "Are you sure you want to exit? (y/n): ");
+    refresh();
+
+    // Get confirmation
+    c = getch();
+    if (c != 'y' && c != 'Y')
+    {
+        clear();
+        return;
+    }
+
+    // Show exit message
+    clear();
+    mvprintw(2, 2, "Exiting...");
+    refresh();
+
+    // Send exit message to server
     n = write(socket, "exit", 4);
     if (n < 0)
     {
-        perror("ERROR writing to socket");
+        mvprintw(4, 2, "ERROR: Could not send exit message");
+        mvprintw(5, 2, "Press any key to force exit...");
+        refresh();
+        getch();
+        endwin(); // Clean up ncurses
         exit(1);
     }
 
-    printf("Exit Success.\n");
-    exit(1);
+    // Clean exit
+    mvprintw(4, 2, "Goodbye!");
+    refresh();
+    napms(1500); // Brief delay to show message
+    endwin();    // Clean up ncurses
+    exit(0);
 }
 
-void display_main_menu(int sock)
+void display_main_menu(void *sock)
 {
-
     char *choices[] = {
         "Create Room",
         "Waiting",
         "Change Password",
         "Logout"};
     int num_choices = sizeof(choices) / sizeof(char *);
-    handle_menu_choice(sock, choices, num_choices, handle_main_menu_selection);
+    int socket = *(int *)sock;
+
+    handle_menu_choice(socket, choices, num_choices, handle_main_menu_selection);
 }
 
 void handle_main_menu_selection(int choice, int sock)
@@ -227,10 +256,15 @@ void handle_create_room(int socket)
     char buffer[8];
     int n;
 
+    // Clear screen before displaying new content
+    clear();
+
+    // Send create room request
     n = write(socket, "cre-room", 8);
     if (n < 0)
     {
-        perror("ERROR writing to socket");
+        mvprintw(1, 2, "ERROR writing to socket");
+        getch();
         exit(1);
     }
 
@@ -240,13 +274,20 @@ void handle_create_room(int socket)
         n = read(socket, buffer, 8);
         if (n < 0)
         {
-            perror("ERROR reading from socket");
+            mvprintw(1, 2, "ERROR reading from socket");
+            getch();
             exit(1);
         }
 
         if (strcmp(buffer, "cre-true") == 0)
         {
-            printf("Create room\n");
+            clear();
+            mvprintw(2, 2, "Room created successfully!");
+            mvprintw(4, 2, "Press any key to continue...");
+            refresh();
+            getch();
+            clear();
+            display_room_menu(&socket);
             loggedIn = 2;
             return;
         }
@@ -257,77 +298,132 @@ void handle_waiting(int socket)
 {
     char invite[6];
     char username[24];
-    int n, check;
+    int n, choice;
 
+    // Clear screen and show waiting message
+    clear();
+    mvprintw(2, 2, "Waiting for invites...");
+    mvprintw(4, 2, "Press 'q' to return to main menu");
+    refresh();
+
+    // Send waiting status to server
     n = write(socket, "waitting", 8);
     if (n < 0)
     {
-        perror("ERROR writing to socket");
-        exit(1);
+        mvprintw(6, 2, "ERROR: Could not send waiting status");
+        mvprintw(7, 2, "Press any key to return...");
+        refresh();
+        getch();
+        return;
     }
 
     while (1)
     {
+        // Check for quit command
+        timeout(100);
+        int c = getch();
+        if (c == 'q' || c == 'Q')
+        {
+            clear();
+            return;
+        }
+
+        // Check for invites
         bzero(invite, 6);
         n = read(socket, invite, 6);
         if (n < 0)
         {
-            perror("ERROR reading from socket");
-            exit(1);
+            mvprintw(6, 2, "ERROR: Connection lost");
+            mvprintw(7, 2, "Press any key to return...");
+            refresh();
+            getch();
+            return;
         }
 
         if (invite[0] == 'i' && invite[1] == 'n')
         {
+            // Read username of inviter
             bzero(username, 24);
             n = read(socket, username, 24);
             if (n < 0)
             {
-                perror("ERROR reading from socket");
-                exit(1);
+                mvprintw(6, 2, "ERROR: Could not read username");
+                mvprintw(7, 2, "Press any key to return...");
+                refresh();
+                getch();
+                return;
             }
 
-            printf("Player %s invites you into the room\n", username);
-            printf("1. Accept\n");
-            printf("2. Refuses\n");
-            printf("Input Chooses: ");
-            scanf("%d", &check);
-
-            if (check == 1)
+            // Handle invite response
+            while (1)
             {
-                n = write(socket, "accept", 6);
-                if (n < 0)
+                // Display invite menu
+                clear();
+                mvprintw(2, 2, "Player %s invites you to their room!", username);
+                mvprintw(4, 2, "1. Accept");
+                mvprintw(5, 2, "2. Decline");
+                mvprintw(7, 2, "Your choice (1-2): ");
+                refresh();
+
+                // Get user choice
+                echo();
+                choice = 0;
+                scanw("%d", &choice);
+                noecho();
+
+                if (choice == 1 || choice == 2)
                 {
-                    perror("ERROR writing to socket");
-                    exit(1);
+                    break;
                 }
 
-                n = write(socket, username, strlen(username));
-                if (n < 0)
+                // Invalid choice
+                mvprintw(9, 2, "Invalid choice! Please select 1 or 2");
+                refresh();
+                napms(1500);
+            }
+
+            if (choice == 1)
+            {
+                // Handle accept
+                if (write(socket, "accept", 6) < 0)
                 {
-                    perror("ERROR writing to socket");
-                    exit(1);
+                    mvprintw(9, 2, "ERROR: Could not send response");
+                    mvprintw(10, 2, "Press any key to return...");
+                    refresh();
+                    getch();
+                    return;
                 }
 
+                clear();
+                mvprintw(2, 2, "Accepted invite from %s", username);
+                refresh();
+                napms(1500);
                 loggedIn = 3;
                 return;
             }
-            else if (check == 2)
+            else // choice == 2
             {
-                n = write(socket, "refuse", 6);
-                if (n < 0)
+                // Handle decline
+                if (write(socket, "refuse", 6) < 0)
                 {
-                    perror("ERROR writing to socket");
-                    exit(1);
+                    mvprintw(9, 2, "ERROR: Could not send response");
+                    mvprintw(10, 2, "Press any key to return...");
+                    refresh();
+                    getch();
+                    return;
                 }
 
-                n = write(socket, username, strlen(username));
-                if (n < 0)
-                {
-                    perror("ERROR writing to socket");
-                    exit(1);
-                }
+                clear();
+                mvprintw(2, 2, "Declined invite from %s", username);
+                mvprintw(4, 2, "Returning to waiting...");
+                refresh();
+                napms(1500);
 
-                break;
+                // Return to waiting screen
+                clear();
+                mvprintw(2, 2, "Waiting for invites...");
+                mvprintw(4, 2, "Press 'q' to return to main menu");
+                refresh();
             }
         }
     }
@@ -375,7 +471,10 @@ void handle_change_password(int socket)
         n = read(socket, buffer, sizeof(buffer));
         if (n < 0)
         {
-            perror("ERROR reading from socket");
+            mvprintw(10, 2, "ERROR: Could not read server response");
+            mvprintw(11, 2, "Press any key to return...");
+            refresh();
+            getch();
             exit(1);
         }
 
@@ -404,55 +503,61 @@ void handle_logout(int socket)
     char buffer[8];
     int n;
 
+    // Clear screen and show logout message
+    clear();
+    mvprintw(2, 2, "Logging out...");
+    refresh();
+
+    // Send logout request
     n = write(socket, "log--out", 8);
     if (n < 0)
     {
-        perror("ERROR writing to socket");
+        mvprintw(4, 2, "ERROR: Could not send logout request");
+        mvprintw(5, 2, "Press any key to exit...");
+        refresh();
+        getch();
+        endwin();
         exit(1);
     }
 
-    while (1)
-    {
-        bzero(buffer, 8);
-        n = read(socket, buffer, 8);
-        if (n < 0)
-        {
-            perror("ERROR reading from socket");
-            exit(1);
-        }
+    // Read server response
+    bzero(buffer, 8);
+    n = read(socket, buffer, 7);
+    buffer[7] = '\0';
 
-        buffer[8] = '\0';
-        printf("%s-%d\n", buffer, strcmp(buffer, "log-true"));
-        if (strcmp(buffer, "log-true") == 0)
-        {
-            printf("Logout Success\n");
-            loggedIn = 0;
-            return;
-        }
-    }
+    clear();
+    mvprintw(2, 2, "Logout game!");
+    mvprintw(4, 2, "Press any key to continue...");
+    refresh();
+    getch();
+    clear();
+    display_login_menu(&socket);
+    loggedIn = 2;
+    return;
 }
 
-void display_room_menu(int sock)
+void display_room_menu(void *sock)
 {
     char *choices[] = {
         "Get User Online",
         "Invite Players",
         "Remove Room"};
     int num_choices = sizeof(choices) / sizeof(char *);
-    handle_menu_choice(sock, choices, num_choices, handle_room_menu_selection);
+    int socket = *(int *)sock;
+    handle_menu_choice(socket, choices, num_choices, handle_room_menu_selection);
 }
 
 void handle_room_menu_selection(int choice, int socket)
 {
     switch (choice)
     {
-    case 1:
+    case 0:
         handle_get_user_online(socket);
         break;
-    case 2:
+    case 1:
         handle_invite_players(socket);
         break;
-    case 3:
+    case 2:
         handle_remove_room(socket);
         break;
     default:
@@ -464,31 +569,59 @@ void handle_room_menu_selection(int choice, int socket)
 void handle_get_user_online(int socket)
 {
     char buffer[1024];
-    int n = write(socket, "get-user", 8);
+    char *user;
+    int n;
+
+    // Clear screen and show loading message
+    clear();
+    mvprintw(2, 2, "Getting online users...");
+    refresh();
+
+    // Send request to get online users
+    n = write(socket, "get-user", 8);
     if (n < 0)
     {
-        perror("ERROR writing to socket");
-        exit(1);
+        mvprintw(4, 2, "ERROR: Could not send request");
+        mvprintw(5, 2, "Press any key to return...");
+        refresh();
+        getch();
+        return;
     }
 
-    while (1)
+    // Clear screen for user list
+    clear();
+    mvprintw(2, 2, "Online Users:");
+    refresh();
+
+    // Read and display user list
+    bzero(buffer, 1024);
+    n = read(socket, buffer, 1024);
+    if (n < 0)
     {
-        bzero(buffer, 1024);
-        n = read(socket, buffer, 1024);
-        if (n < 0)
-        {
-            perror("ERROR reading from socket");
-            exit(1);
-        }
-
-        printf("User Online:\n");
-        printf("%s\n", buffer);
-
-        if (n >= 0)
-        {
-            break;
-        }
+        mvprintw(4, 2, "ERROR: Connection lost");
+        mvprintw(5, 2, "Press any key to return...");
+        refresh();
+        getch();
+        return;
     }
+
+    // Parse and display user list with proper formatting
+    int row = 4;
+    int count = 1;
+    user = strtok(buffer, "\n");
+    while (user != NULL)
+    {
+        mvprintw(row, 2, "%s", user);
+        row += 2;
+        count++;
+        user = strtok(NULL, "\n");
+    }
+
+    // Wait for user input before returning
+    mvprintw(row + 2, 2, "Press any key to return to menu...");
+    refresh();
+    getch();
+    clear();
 }
 
 void handle_invite_players(int socket)
@@ -558,12 +691,20 @@ void handle_remove_room(int socket)
     int n = write(socket, "remove--", 8);
     if (n < 0)
     {
-        perror("ERROR writing to socket");
-        exit(1);
+        mvprintw(4, 2, "ERROR: Could not remove room");
+        mvprintw(5, 2, "Press any key to return...");
+        refresh();
+        getch();
+        return;
     }
 
-    printf("Room removed successfully!\n");
-    loggedIn = 1; // Quay lại trạng thái trước khi vào phòng
+    // Show success message
+    clear();
+    mvprintw(2, 2, "Room removed successfully!");
+    refresh();
+    display_main_menu(&socket);
+    loggedIn = 1; // Return to main menu state
+    clear();
 }
 
 void handle_menu_choice(int sock, char *choices[], int num_choices, void (*handle_selection)(int, int))
@@ -582,10 +723,10 @@ void handle_menu_choice(int sock, char *choices[], int num_choices, void (*handl
     // Create the menu loop
     while (1)
     {
-        // if (invite_processing)
-        // {
-        //     continue;
-        // }
+        if (invite_processing)
+        {
+            continue;
+        }
         for (int i = 0; i < num_choices; ++i)
         {
             if (i == highlight)

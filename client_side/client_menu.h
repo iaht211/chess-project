@@ -10,7 +10,7 @@
 void display_login_menu(void *sock);
 
 // Hiển thị menu chính
-void display_main_menu(int sock);
+void display_main_menu(void *sock);
 
 // Xử lý lựa chọn từ menu chung
 void handle_menu_choice(int sock, char *choices[], int num_choices, void (*handle_selection)(int, int));

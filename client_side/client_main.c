@@ -8,8 +8,9 @@
 #include <ncurses.h>
 
 #include "board.h"
-#include "menu.h"
+// #include "menu.h"
 #include "signal.h"
+#include "client_menu.h"
 
 int loggedIn = 0;
 
@@ -74,11 +75,11 @@ int main(int argc, char *argv[])
         }
         else if (loggedIn == 1)
         {
-            menuGame(&sockfd);
+            display_main_menu(&sockfd);
         }
         else if (loggedIn == 2)
         {
-            menuOnRoom(&sockfd);
+            display_room_menu(&sockfd);
         }
         else if (loggedIn == 3)
         {
