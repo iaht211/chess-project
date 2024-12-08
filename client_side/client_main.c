@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     {
         if (loggedIn == 0)
         {
-            menuLogin(&sockfd);
+            display_login_menu(&sockfd);
         }
         else if (loggedIn == 1)
         {
