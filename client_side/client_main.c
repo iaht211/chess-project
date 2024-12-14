@@ -69,39 +69,40 @@ int main(int argc, char *argv[])
      */
     while (1)
     {
-        if (loggedIn == 0)
-        {
-            display_login_menu(&sockfd);
-        }
-        else if (loggedIn == 1)
-        {
-            display_main_menu(&sockfd);
-        }
-        else if (loggedIn == 2)
-        {
-            display_room_menu(&sockfd);
-        }
-        else if (loggedIn == 3)
-        {
-            pthread_t tid[1];
+        // if (loggedIn == 0)
+        // {
+        //     menuLogin(&sockfd);
+        // }
+        // else if (loggedIn == 1)
+        // {
+        //     menuGame(&sockfd);
+        // }
+        // else if (loggedIn == 2)
+        // {
+        //     menuOnRoom(&sockfd);
+        // }
+        // else if (loggedIn == 3)
+        // {
+        //     pthread_t tid[1];
 
-            pthread_create(&tid[0], NULL, &on_signal, &sockfd);
+        //     pthread_create(&tid[0], NULL, &on_signal, &sockfd);
 
-            while (1)
-            {
-                bzero(buffer, 64);
-                fgets(buffer, 64, stdin);
+        //     while (1)
+        //     {
+        //         bzero(buffer, 64);
+        //         fgets(buffer, 64, stdin);
 
-                /* Send message to the server */
-                n = write(sockfd, buffer, strlen(buffer));
+        //         /* Send message to the server */
+        //         n = write(sockfd, buffer, strlen(buffer));
 
-                if (n < 0)
-                {
-                    perror("ERROR writing to socket");
-                    exit(1);
-                }
-            }
-        }
+        //         if (n < 0)
+        //         {
+        //             perror("ERROR writing to socket");
+        //             exit(1);
+        //         }
+        //     }
+        // }
+        main_loop(sockfd);
     }
 
     return 0;

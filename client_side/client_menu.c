@@ -2,14 +2,58 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "signal.h"
 
 #include "client_menu.h"
 
 #define BUFFER_SIZE 256
 
-extern int loggedIn;
+int loggedIn2 = 0;
 
 volatile int invite_processing = 0;
+int login_successful = 0;
+void main_loop(int sockfd)
+{
+    char buffer[64];
+    int n;
+
+    while (1)
+    {
+        if (loggedIn2 == 0)
+        {
+            display_login_menu(&sockfd);
+        }
+        else if (loggedIn2 == 1)
+        {
+            display_main_menu(&sockfd);
+        }
+        else if (loggedIn2 == 2)
+        {
+            display_room_menu(&sockfd);
+        }
+        else if (loggedIn2 == 3)
+        {
+            pthread_t tid[1];
+
+            pthread_create(&tid[0], NULL, &on_signal, &sockfd);
+
+            while (1)
+            {
+                bzero(buffer, 64);
+                fgets(buffer, 64, stdin);
+
+                /* Send message to the server */
+                n = write(sockfd, buffer, strlen(buffer));
+
+                if (n < 0)
+                {
+                    perror("ERROR writing to socket");
+                    exit(1);
+                }
+            }
+        }
+    }
+}
 
 void display_login_menu(void *sockfd)
 {
@@ -20,6 +64,7 @@ void display_login_menu(void *sockfd)
     int num_choices = sizeof(choices) / sizeof(char *);
     int socket = *(int *)sockfd;
     handle_menu_choice(socket, choices, num_choices, handle_login_menu_selection);
+    return;
 }
 
 void handle_login_menu_selection(int choice, int sock)
@@ -87,9 +132,9 @@ void handle_login(int socket)
             mvprintw(4, 2, "Login successful. Press any key to continue to the main menu...");
             getch();
             clear();
-            display_main_menu(&socket);
-
-            loggedIn = 1;
+            loggedIn2 = 1;
+            endwin();
+            main_loop(socket);
         }
         else if (buffer[0] == 'f')
         {
@@ -97,7 +142,7 @@ void handle_login(int socket)
             mvprintw(5, 2, "Press any key to try again...");
             getch();
             clear();
-            display_login_menu(&socket); // Retry login
+            main_loop(socket);
         }
     }
 }
@@ -288,8 +333,8 @@ void handle_create_room(int socket)
             getch();
             clear();
             display_room_menu(&socket);
-            loggedIn = 2;
-            return;
+            loggedIn2 = 2;
+            main_loop(socket);
         }
     }
 }
@@ -353,80 +398,75 @@ void handle_waiting(int socket)
                 getch();
                 return;
             }
-
-            // Handle invite response
-            while (1)
-            {
-                // Display invite menu
-                clear();
-                mvprintw(2, 2, "Player %s invites you to their room!", username);
-                mvprintw(4, 2, "1. Accept");
-                mvprintw(5, 2, "2. Decline");
-                mvprintw(7, 2, "Your choice (1-2): ");
-                refresh();
-
-                // Get user choice
-                echo();
-                choice = 0;
-                scanw("%d", &choice);
-                noecho();
-
-                if (choice == 1 || choice == 2)
-                {
-                    break;
-                }
-
-                // Invalid choice
-                mvprintw(9, 2, "Invalid choice! Please select 1 or 2");
-                refresh();
-                napms(1500);
-            }
-
-            if (choice == 1)
-            {
-                // Handle accept
-                if (write(socket, "accept", 6) < 0)
-                {
-                    mvprintw(9, 2, "ERROR: Could not send response");
-                    mvprintw(10, 2, "Press any key to return...");
-                    refresh();
-                    getch();
-                    return;
-                }
-
-                clear();
-                mvprintw(2, 2, "Accepted invite from %s", username);
-                refresh();
-                napms(1500);
-                loggedIn = 3;
-                return;
-            }
-            else // choice == 2
-            {
-                // Handle decline
-                if (write(socket, "refuse", 6) < 0)
-                {
-                    mvprintw(9, 2, "ERROR: Could not send response");
-                    mvprintw(10, 2, "Press any key to return...");
-                    refresh();
-                    getch();
-                    return;
-                }
-
-                clear();
-                mvprintw(2, 2, "Declined invite from %s", username);
-                mvprintw(4, 2, "Returning to waiting...");
-                refresh();
-                napms(1500);
-
-                // Return to waiting screen
-                clear();
-                mvprintw(2, 2, "Waiting for invites...");
-                mvprintw(4, 2, "Press 'q' to return to main menu");
-                refresh();
-            }
+            clear();
+            display_invite(&socket);
         }
     }
+}
+
+void display_invite(void *sock)
+{
+    char *choices[] = {
+        "1. Accept",
+        "2. Refuse"};
+    int num_choices = sizeof(choices) / sizeof(char *);
+    int socket = *(int *)sock;
+    handle_menu_choice(socket, choices, num_choices, handle_invite_selection);
+}
+
+void handle_invite_selection(int choice, int socket)
+{
+    switch (choice)
+    {
+    case 0:
+        handle_accept(socket);
+        break;
+    case 1:
+        handle_refuse(socket);
+        break;
+    default:
+        printf("Invalid choice. Please select again.\n");
+        break;
+    }
+}
+
+void handle_accept(int socket)
+{
+    // Handle accept
+    if (write(socket, "accept", 6) < 0)
+    {
+        mvprintw(9, 2, "ERROR: Could not send response");
+        mvprintw(10, 2, "Press any key to return...");
+        refresh();
+        getch();
+        return;
+    }
+
+    clear();
+    refresh();
+    mvprintw(2, 2, "Accepted invite");
+    loggedIn2 = 3;
+
+    endwin(); // Kết thúc ncurses
+    main_loop(socket);
+}
+
+void handle_refuse(int socket)
+{
+    // Handle decline
+    if (write(socket, "refuse", 6) < 0)
+    {
+        mvprintw(9, 2, "ERROR: Could not send response");
+        mvprintw(10, 2, "Press any key to return...");
+        refresh();
+        getch();
+        return;
+    }
+
+    mvprintw(2, 2, "Declined invite");
+    mvprintw(4, 2, "Returning to waiting...");
+    clear();
+    display_main_menu(&socket);
 }
 
 void handle_change_password(int socket)
@@ -532,7 +572,7 @@ void handle_logout(int socket)
     getch();
     clear();
     display_login_menu(&socket);
-    loggedIn = 2;
+    loggedIn2 = 2;
     return;
 }
 
@@ -671,9 +711,9 @@ void handle_invite_players(int socket)
             mvprintw(3, 2, "The opponent accepted the invite!");
             mvprintw(4, 2, "Press any key to proceed...");
             getch();
-            loggedIn = 3; // Cập nhật trạng thái đăng nhập
-            clear();
-            return;
+            loggedIn2 = 3; // Cập nhật trạng thái đăng nhập
+            endwin();      // Kết thúc ncurses
+            main_loop(socket);
         }
         else if (strcmp(dataread, "refuse") == 0) // Đối thủ từ chối
         {
@@ -703,7 +743,7 @@ void handle_remove_room(int socket)
     mvprintw(2, 2, "Room removed successfully!");
     refresh();
     display_main_menu(&socket);
-    loggedIn = 1; // Return to main menu state
+    loggedIn2 = 1; // Return to main menu state
     clear();
 }
 

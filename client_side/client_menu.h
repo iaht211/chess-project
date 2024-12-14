@@ -6,7 +6,8 @@
 #include <string.h> // Hàm xử lý chuỗi
 #include <unistd.h> // Hàm read, write
 
-// Hiển thị menu đăng nhập
+void main_loop(int sockfd);
+
 void display_login_menu(void *sock);
 
 // Hiển thị menu chính
@@ -43,5 +44,13 @@ void handle_change_password(int socket);
 void handle_logout(int socket);
 
 void handle_room_menu_selection(int choice, int sock);
+
+void display_invite(void *sock);
+
+void handle_invite_selection(int choice, int socket);
+
+void handle_accept(int socket);
+
+void handle_refuse(int socket);
 
 #endif // CLIENT_MENU_H

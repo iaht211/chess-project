@@ -402,6 +402,7 @@ void *user(void *client_socket)
                 pthread_mutex_unlock(&general_mutex);
                 logLogin(username);
                 waiting = lobby(player, username);
+                printf("Waiting: %d\n", waiting);
                 if (waiting == 1)
                 {
                     getAllUser(player);
