@@ -9,6 +9,7 @@
 #define BUFFER_SIZE 256
 
 int loggedIn2 = 0;
+char opponent[24];
 
 volatile int invite_processing = 0;
 int login_successful = 0;
@@ -398,6 +399,7 @@ void handle_waiting(int socket)
                 getch();
                 return;
             }
+            strcpy(opponent, username);
             clear();
             display_invite(&socket);
         }
@@ -442,12 +444,21 @@ void handle_accept(int socket)
         return;
     }
 
+    if (write(socket, opponent, 24) < 0)
+    {
+        mvprintw(9, 2, "ERROR: Could not send response");
+        mvprintw(10, 2, "Press any key to return...");
+        refresh();
+        getch();
+        return;
+    }
+
     clear();
     refresh();
     mvprintw(2, 2, "Accepted invite");
     loggedIn2 = 3;
 
-    endwin(); // Kết thúc ncurses
+//    endwin(); // Kết thúc ncurses
     main_loop(socket);
 }
 
@@ -710,6 +721,14 @@ void handle_invite_players(int socket)
         {
             mvprintw(3, 2, "The opponent accepted the invite!");
             mvprintw(4, 2, "Press any key to proceed...");
+            if (write(socket, "accept", 6) < 0)
+            {
+                mvprintw(9, 2, "ERROR: Could not send response");
+                mvprintw(10, 2, "Press any key to return...");
+                refresh();
+                getch();
+                return;
+            }
             getch();
             loggedIn2 = 3; // Cập nhật trạng thái đăng nhập
             endwin();      // Kết thúc ncurses
