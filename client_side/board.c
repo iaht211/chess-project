@@ -144,116 +144,101 @@ char get_char_piece(char piece) {
     }
 }
 
-void print_board_buff(char *board){
-    for(int i = 0; i < 8; i++){
-        for(int j = 0; j < 8; j++){
-            printf("%c ", board[i*8 + j]);
-        }
-        printf("\n");
-    }
-    // printf("Print normal board\n");
-}
-
 // void print_board_buff(char *board){
-//     initscr();
-//     noecho();
-//     curs_set(FALSE);
-//     start_color();
-//     init_pair(1, COLOR_WHITE, COLOR_BLACK); // Black squares
-//     init_pair(2, COLOR_BLACK, COLOR_WHITE); // White squares
-//     init_pair(5, COLOR_BLUE, COLOR_BLACK);  // White pieces on black squares
-//     init_pair(6, COLOR_RED, COLOR_BLACK);   // Black pieces on black squares
-//     init_pair(7, COLOR_BLUE, COLOR_WHITE);  // White pieces on white squares
-//     init_pair(8, COLOR_RED, COLOR_WHITE);   // Black pieces on white squares
-
-//     int start_x = 4, start_y = 2;
-//     int tile_width = 3, tile_height = 1;
-
-//     for (int j = 0; j < BOARD_SIZE; j++) {
-//         mvprintw(start_y - 1, start_x + j * tile_width + tile_width / 2, "%c", 'A' + j);
-//     }
-
-//     for (int i = 0; i < BOARD_SIZE; i++) {
-//         mvprintw(start_y + i * tile_height + tile_height / 2, start_x - 2, "%d", BOARD_SIZE - i);
-//     }
-
-//     for (int i = 0; i < BOARD_SIZE; i++){
-//         for (int j = 0; j < BOARD_SIZE; j++){
-//             int x = start_x + j * tile_width;
-//             int y = start_y + i * tile_height;
-
-//             if ((i + j) % 2 == 0){
-//                 attron(COLOR_PAIR(1));
-//             } else {
-//                 attron(COLOR_PAIR(2));
-//             }
-
-//             for(int dy = 0; dy < tile_height; dy++){
-//                 for(int dx = 0; dx < tile_width; dx++){
-//                     mvprintw(y + dy, x + dx, " ");
-//                 }
-//             }
-
-//             if ((i + j) % 2 == 0){
-//                 attroff(COLOR_PAIR(1));
-//             } else {
-//                 attroff(COLOR_PAIR(2));
-//             }
+//     for(int i = 0; i < 8; i++){
+//         for(int j = 0; j < 8; j++){
+//             printf("%c ", board[i*8 + j]);
 //         }
+//         printf("\n");
 //     }
-
-//     // Print the pieces
-//     for(int i = 0; i < BOARD_SIZE; i++){
-//         for(int j = 0; j < BOARD_SIZE; j++){
-//             char piece = board[i * BOARD_SIZE + j];
-//             if (piece == ' '){
-//                 continue;
-//             }
-//             int x = start_x + j * tile_width + tile_width / 2;
-//             int y = start_y + i * tile_height + tile_height / 2;
-
-//             int WHITE_PIECE = 1;
-//             if (piece >= '1' && piece <= '6')
-//                 WHITE_PIECE = 0;
-
-//             if ((i+j) % 2 == 0){
-//                 if(WHITE_PIECE){
-//                     attron(COLOR_PAIR(5));
-//                 } else {
-//                     attron(COLOR_PAIR(6));
-//                 }
-//             } else {
-//                 if(WHITE_PIECE){
-//                     attron(COLOR_PAIR(7));
-//                 } else {
-//                     attron(COLOR_PAIR(8));
-//                 }
-//             }
-
-//             mvprintw(y, x, "%c", get_char_piece(piece));
-//             if ((i+j) % 2 == 0){
-//                 if(WHITE_PIECE){
-//                     attroff(COLOR_PAIR(5));
-//                 } else {
-//                     attroff(COLOR_PAIR(6));
-//                 }
-//             } else {
-//                 if(WHITE_PIECE){
-//                     attroff(COLOR_PAIR(7));
-//                 } else {
-//                     attroff(COLOR_PAIR(8));
-//                 }
-//             }
-//         }
-//     }
-
-//     // Refresh the screen and wait for user input to exit
-//     refresh();
-//     getch();
-
-//     // End ncurses mode
-//     endwin();
+//     // printf("Print normal board\n");
 // }
+
+void print_board_buff(char *board){
+    int start_x = 4, start_y = 2;
+    int tile_width = 3, tile_height = 1;
+
+    for (int j = 0; j < BOARD_SIZE; j++) {
+        mvprintw(start_y - 1, start_x + j * tile_width + tile_width / 2, "%c", 'A' + j);
+    }
+
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        mvprintw(start_y + i * tile_height + tile_height / 2, start_x - 2, "%d", BOARD_SIZE - i);
+    }
+
+    for (int i = 0; i < BOARD_SIZE; i++){
+        for (int j = 0; j < BOARD_SIZE; j++){
+            int x = start_x + j * tile_width;
+            int y = start_y + i * tile_height;
+
+            if ((i + j) % 2 == 0){
+                attron(COLOR_PAIR(1));
+            } else {
+                attron(COLOR_PAIR(2));
+            }
+
+            for(int dy = 0; dy < tile_height; dy++){
+                for(int dx = 0; dx < tile_width; dx++){
+                    mvprintw(y + dy, x + dx, " ");
+                }
+            }
+
+            if ((i + j) % 2 == 0){
+                attroff(COLOR_PAIR(1));
+            } else {
+                attroff(COLOR_PAIR(2));
+            }
+        }
+    }
+
+    // Print the pieces
+    for(int i = 0; i < BOARD_SIZE; i++){
+        for(int j = 0; j < BOARD_SIZE; j++){
+            char piece = board[i * BOARD_SIZE + j];
+            if (piece == ' '){
+                continue;
+            }
+            int x = start_x + j * tile_width + tile_width / 2;
+            int y = start_y + i * tile_height + tile_height / 2;
+
+            int WHITE_PIECE = 1;
+            if (piece >= '1' && piece <= '6')
+                WHITE_PIECE = 0;
+
+            if ((i+j) % 2 == 0){
+                if(WHITE_PIECE){
+                    attron(COLOR_PAIR(5));
+                } else {
+                    attron(COLOR_PAIR(6));
+                }
+            } else {
+                if(WHITE_PIECE){
+                    attron(COLOR_PAIR(7));
+                } else {
+                    attron(COLOR_PAIR(8));
+                }
+            }
+
+            mvprintw(y, x, "%c", get_char_piece(piece));
+            if ((i+j) % 2 == 0){
+                if(WHITE_PIECE){
+                    attroff(COLOR_PAIR(5));
+                } else {
+                    attroff(COLOR_PAIR(6));
+                }
+            } else {
+                if(WHITE_PIECE){
+                    attroff(COLOR_PAIR(7));
+                } else {
+                    attroff(COLOR_PAIR(8));
+                }
+            }
+        }
+    }
+
+    // Refresh the screen and wait for user input to exit
+    refresh();
+}
 
 
 
@@ -264,31 +249,20 @@ void print_board_buff(char *board){
 //         }
 //         printf("\n");
 //     }
-//     // printf("Print inverted board\n");  
+//     // printf("Print inverted board\n");
 // }
 
 
 void print_board_buff_inverted(char *board) {
-    initscr();
-    noecho();
-    curs_set(FALSE);
-    start_color();
-    init_pair(1, COLOR_WHITE, COLOR_BLACK); // Black squares
-    init_pair(2, COLOR_BLACK, COLOR_WHITE); // White squares
-    init_pair(5, COLOR_BLUE, COLOR_BLACK);  // White pieces on black squares
-    init_pair(6, COLOR_RED, COLOR_BLACK);   // Black pieces on black squares
-    init_pair(7, COLOR_BLUE, COLOR_WHITE);  // White pieces on white squares
-    init_pair(8, COLOR_RED, COLOR_WHITE);   // Black pieces on white squares
-
     int start_x = 4, start_y = 2;
     int tile_width = 3, tile_height = 1;
 
     for (int j = 0; j < BOARD_SIZE; j++) {
-        mvprintw(start_y - 1, start_x + j * tile_width + tile_width / 2, "%c", 'A' + j);
+        mvprintw(start_y - 1, start_x + j * tile_width + tile_width / 2, "%c", 'H' - j);
     }
 
     for (int i = 0; i < BOARD_SIZE; i++) {
-        mvprintw(start_y + i * tile_height + tile_height / 2, start_x - 2, "%d", BOARD_SIZE - i);
+        mvprintw(start_y + i * tile_height + tile_height / 2, start_x - 2, "%d", 1 + i);
     }
 
     for (int i = 0; i < BOARD_SIZE; i++) {
@@ -363,8 +337,4 @@ void print_board_buff_inverted(char *board) {
 
     // Refresh the screen and wait for user input to exit
     refresh();
-    getch();
-
-    // End ncurses mode
-    endwin();
 }

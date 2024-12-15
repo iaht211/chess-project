@@ -391,7 +391,7 @@ void *user(void *client_socket)
             char *username = strtok(login, " ");
             char *password = strtok(NULL, " ");
 
-            if (checkLogin(username, password))
+            if (checkLogin(username, password)&& checkLogged(username))
             {
                 send(player, "t", 1, 0);
                 pthread_mutex_lock(&general_mutex);
