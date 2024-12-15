@@ -17,7 +17,7 @@
 #include "logging.h"
 #include "user.h"
 
-#define PORT 8080;
+#define PORT 8000;
 
 // Match player
 int challenging_player = 0;
@@ -82,6 +82,8 @@ void *game_room()
                 perror("ERROR reading from socket");
                 exit(1);
             }
+            if (strcmp(buffer, "\n") == 0)
+                continue;
             printf("Player one (%d) move: %s\n", player_one, buffer);
 
             if (buffer[0] == 'g' && buffer[1] == 'i')
